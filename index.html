@@ -541,10 +541,11 @@
             border-right-color: #ffc107;
         }
 
+        /* وضع محدد العملة يمين للـ RTL */
         .currency-selector {
             position: fixed;
             top: 25px;
-            left: 25px;
+            right: 25px; /* تم تغييره من left إلى right */
             background: rgba(255,255,255,0.95);
             backdrop-filter: blur(20px);
             border-radius: 25px;
@@ -600,6 +601,7 @@
             font-weight: 600;
         }
 
+        /* modal single definition - تم تنظيف التعاريف المكررة */
         .modal {
             display: none;
             position: fixed;
@@ -620,12 +622,7 @@
         }
 
         @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-            to {
-                opacity: 1;
-            }
+            from { opacity: 0; } to { opacity: 1; }
         }
 
         .modal-content {
@@ -642,16 +639,12 @@
             animation: slideUp 0.4s ease;
         }
 
-@keyframes slideUp {
-    from {
-        opacity: 0;
-        transform: translateY(50px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}        .stat-value {
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(50px); } 
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .stat-value {
             font-size: 1.5rem;
             font-weight: bold;
             color: #4facfe;
@@ -663,46 +656,10 @@
             color: #666;
         }
 
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 1000;
-        }
-
-        .modal.active {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal-content {
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            width: 90%;
-            max-width: 400px;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-
         @media (max-width: 480px) {
-            .container {
-                max-width: 100%;
-            }
-            
-            .nav-tab {
-                font-size: 0.75rem;
-                padding: 10px 5px;
-            }
-            
-            .content {
-                padding: 10px;
-            }
+            .container { max-width: 100%; }
+            .nav-tab { font-size: 0.75rem; padding: 10px 5px; }
+            .content { padding: 10px; }
         }
 
         .alert {
@@ -712,39 +669,12 @@
             border-right: 4px solid;
         }
 
-        .alert-warning {
-            background: #fff3cd;
-            color: #856404;
-            border-right-color: #ffc107;
-        }
+        .alert-warning { background: #fff3cd; color: #856404; border-right-color: #ffc107; }
+        .alert-success { background: #d4edda; color: #155724; border-right-color: #28a745; }
+        .alert-danger { background: #f8d7da; color: #721c24; border-right-color: #dc3545; }
 
-        .alert-success {
-            background: #d4edda;
-            color: #155724;
-            border-right-color: #28a745;
-        }
-
-        .alert-danger {
-            background: #f8d7da;
-            color: #721c24;
-            border-right-color: #dc3545;
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 8px;
-            background: #e9ecef;
-            border-radius: 4px;
-            overflow: hidden;
-            margin: 10px 0;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
-            border-radius: 4px;
-            transition: width 0.3s ease;
-        }
+        .progress-bar { width: 100%; height: 8px; background: #e9ecef; border-radius: 4px; overflow: hidden; margin: 10px 0; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%); border-radius: 4px; transition: width 0.3s ease; }
     </style>
 </head>
 <body>
@@ -764,10 +694,11 @@
         </header>
 
         <nav class="nav-tabs">
-            <button class="nav-tab active" onclick="switchTab('dashboard')">الرئيسية</button>
-            <button class="nav-tab" onclick="switchTab('bills')">الفواتير</button>
-            <button class="nav-tab" onclick="switchTab('energy')">الطاقة</button>
-            <button class="nav-tab" onclick="switchTab('budget')">الميزانية</button>
+            <!-- مرّر الحدث event واسم التبويب لِحل مشكلة event.target -->
+            <button class="nav-tab active" onclick="switchTab(event,'dashboard')">الرئيسية</button>
+            <button class="nav-tab" onclick="switchTab(event,'bills')">الفواتير</button>
+            <button class="nav-tab" onclick="switchTab(event,'energy')">الطاقة</button>
+            <button class="nav-tab" onclick="switchTab(event,'budget')">الميزانية</button>
         </nav>
 
         <div class="content">
@@ -981,7 +912,7 @@
     </div>
 
     <script>
-        // App State
+        // App State مع إعدادات سعر الوحدة
         let appData = {
             bills: [],
             meterReadings: [],
@@ -990,14 +921,35 @@
                 monthlyIncome: 0,
                 billsBudget: 0
             },
-            currency: 'شيكل'
+            currency: 'شيكل',
+            settings: {
+                pricePerKwh: null // يمكن للمستخدم تغييره لاحقًا (إذا null -> نستخدم الافتراضي لكل عملة)
+            }
         };
 
-        // Load data from localStorage on startup
+        // خريطة أسعار افتراضية لكل عملة (اضبطها حسب بلدك لاحقًا)
+        const defaultPricePerKwh = {
+            'شيكل': 0.6,
+            'دينار': 0.085,
+            'ريال': 0.225,
+            '$': 0.06
+        };
+
+        function getPricePerKwh() {
+            if (appData.settings && appData.settings.pricePerKwh) return appData.settings.pricePerKwh;
+            return defaultPricePerKwh[appData.currency] ?? 0.6;
+        }
+
+        // Load/save
         function loadData() {
             const savedData = localStorage.getItem('smartBillData');
             if (savedData) {
-                appData = { ...appData, ...JSON.parse(savedData) };
+                try {
+                    const parsed = JSON.parse(savedData);
+                    appData = { ...appData, ...parsed };
+                } catch (e) {
+                    console.error('فشل قراءة البيانات المخزنة', e);
+                }
             }
             updateCurrency();
             updateDashboard();
@@ -1007,43 +959,39 @@
             renderExpenses();
         }
 
-        // Save data to localStorage
         function saveData() {
             localStorage.setItem('smartBillData', JSON.stringify(appData));
         }
 
-        // Tab switching
-        function switchTab(tabName) {
+        // Tab switching (نمرّر الحدث الآن)
+        function switchTab(ev, tabName) {
+            const target = ev && ev.currentTarget ? ev.currentTarget : null;
             document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-            
-            event.target.classList.add('active');
-            document.getElementById(tabName).classList.add('active');
+            if (target) target.classList.add('active');
+            const el = document.getElementById(tabName);
+            if (el) el.classList.add('active');
         }
 
         // Currency management
         function updateCurrency() {
-            document.getElementById('currencySelect').value = appData.currency;
-            document.getElementById('currencySelect').addEventListener('change', function() {
+            const sel = document.getElementById('currencySelect');
+            if (!sel) return;
+            sel.value = appData.currency;
+            sel.addEventListener('change', function() {
                 appData.currency = this.value;
                 saveData();
                 updateDashboard();
                 renderBills();
                 renderBudgetData();
                 renderExpenses();
+                calculateBillPrediction();
             });
         }
 
         // Bill management
-        function showAddBillModal() {
-            document.getElementById('addBillModal').classList.add('active');
-        }
-
-        function hideAddBillModal() {
-            document.getElementById('addBillModal').classList.remove('active');
-            clearBillForm();
-        }
-
+        function showAddBillModal() { document.getElementById('addBillModal').classList.add('active'); }
+        function hideAddBillModal() { document.getElementById('addBillModal').classList.remove('active'); clearBillForm(); }
         function clearBillForm() {
             document.getElementById('billType').value = 'كهرباء';
             document.getElementById('billAmount').value = '';
@@ -1104,14 +1052,13 @@
         function renderBills() {
             const upcomingBills = document.getElementById('upcomingBills');
             const allBills = document.getElementById('allBills');
-            
             const today = new Date();
             const upcoming = appData.bills
                 .filter(bill => !bill.paid && new Date(bill.dueDate) >= today)
+                .slice()
                 .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))
                 .slice(0, 3);
 
-            // Render upcoming bills for dashboard
             if (upcoming.length === 0) {
                 upcomingBills.innerHTML = `
                     <div class="bill-item">
@@ -1125,7 +1072,6 @@
                 upcomingBills.innerHTML = upcoming.map(bill => {
                     const daysLeft = Math.ceil((new Date(bill.dueDate) - today) / (1000 * 60 * 60 * 24));
                     const isUrgent = daysLeft <= 3;
-                    
                     return `
                         <div class="bill-item ${isUrgent ? 'urgent' : ''}">
                             <div class="bill-info">
@@ -1143,7 +1089,6 @@
                 }).join('');
             }
 
-            // Render all bills
             if (appData.bills.length === 0) {
                 allBills.innerHTML = `
                     <div class="bill-item">
@@ -1154,11 +1099,11 @@
                     </div>
                 `;
             } else {
-                allBills.innerHTML = appData.bills.map(bill => {
+                const sorted = appData.bills.slice().sort((a,b) => new Date(b.addedDate) - new Date(a.addedDate));
+                allBills.innerHTML = sorted.map(bill => {
                     const dueDate = new Date(bill.dueDate);
                     const formattedDate = dueDate.toLocaleDateString('ar-SA');
                     const isOverdue = dueDate < today && !bill.paid;
-                    
                     return `
                         <div class="bill-item ${isOverdue ? 'urgent' : ''}" style="${bill.paid ? 'opacity: 0.6;' : ''}">
                             <div class="bill-info">
@@ -1184,22 +1129,25 @@
 
         // Energy management
         function addMeterReading() {
-            const reading = parseFloat(document.getElementById('meterReading').value);
-            if (!reading) {
-                alert('يرجى إدخال قراءة العداد');
+            const readingInput = document.getElementById('meterReading');
+            const reading = parseFloat(readingInput.value);
+            if (isNaN(reading)) {
+                alert('يرجى إدخال قراءة العداد صحيحة');
                 return;
             }
 
+            // If there is a previous reading and new < previous -> warn user but still save (mark reset)
+            const readingsSorted = appData.meterReadings.slice().sort((a,b) => new Date(a.date) - new Date(b.date));
+            const last = readingsSorted[readingsSorted.length - 1];
             const meterReading = {
                 id: Date.now(),
                 value: reading,
                 date: new Date().toISOString(),
-                month: new Date().getMonth() + 1,
-                year: new Date().getFullYear()
+                reset: last && reading < last.value // علامة أن العداد أُعيد ضبطه
             };
 
             appData.meterReadings.push(meterReading);
-            document.getElementById('meterReading').value = '';
+            readingInput.value = '';
             saveData();
             renderEnergyData();
             updateDashboard();
@@ -1211,7 +1159,7 @@
             const currentConsumption = document.getElementById('currentConsumption');
             const energyConsumption = document.getElementById('energyConsumption');
             const energyChange = document.getElementById('energyChange');
-            
+
             if (appData.meterReadings.length < 2) {
                 currentConsumption.textContent = '0 kWh';
                 energyConsumption.textContent = '0 kWh';
@@ -1219,33 +1167,48 @@
                 return;
             }
 
-            const readings = appData.meterReadings.sort((a, b) => new Date(a.date) - new Date(b.date));
+            const readings = appData.meterReadings.slice().sort((a, b) => new Date(a.date) - new Date(b.date));
             const latest = readings[readings.length - 1];
             const previous = readings[readings.length - 2];
-            
+
             const consumption = latest.value - previous.value;
-            const daysDiff = Math.ceil((new Date(latest.date) - new Date(previous.date)) / (1000 * 60 * 60 * 24));
+            if (consumption < 0) {
+                // قراءة أقل من السابقة -> احتمال إعادة ضبط العداد
+                currentConsumption.textContent = 'خطأ بالتتابع';
+                energyConsumption.textContent = '—';
+                energyChange.textContent = 'تحقق من قراءات العداد (ربما تم إعادة ضبط)';
+                return;
+            }
+
+            const daysDiff = Math.max(1, Math.ceil((new Date(latest.date) - new Date(previous.date)) / (1000 * 60 * 60 * 24)));
             const dailyAvg = consumption / daysDiff;
             const weeklyConsumption = dailyAvg * 7;
 
             currentConsumption.textContent = `${weeklyConsumption.toFixed(1)} kWh`;
             energyConsumption.textContent = `${consumption.toFixed(1)} kWh`;
-            
-            // Calculate monthly comparison
-            const currentMonth = new Date().getMonth() + 1;
-            const currentYear = new Date().getFullYear();
-            const lastMonthReadings = appData.meterReadings.filter(r => {
-                const date = new Date(r.date);
-                return date.getMonth() + 1 === (currentMonth === 1 ? 12 : currentMonth - 1) &&
-                       date.getFullYear() === (currentMonth === 1 ? currentYear - 1 : currentYear);
+
+            // مقارنة مع الشهر السابق (محسوبة بـ 0-based months بطريقة آمنة)
+            const latestMonthIndex = new Date(latest.date).getMonth();
+            const latestYear = new Date(latest.date).getFullYear();
+            const prevMonthIndex = (latestMonthIndex - 1 + 12) % 12;
+            const prevYear = latestMonthIndex === 0 ? latestYear - 1 : latestYear;
+
+            const lastMonthReadings = readings.filter(r => {
+                const d = new Date(r.date);
+                return d.getMonth() === prevMonthIndex && d.getFullYear() === prevYear;
             });
 
             if (lastMonthReadings.length >= 2) {
-                const lastMonthConsumption = Math.max(...lastMonthReadings.map(r => r.value)) - 
-                                           Math.min(...lastMonthReadings.map(r => r.value));
-                const change = ((consumption - lastMonthConsumption) / lastMonthConsumption * 100).toFixed(1);
-                const changeText = change > 0 ? `زيادة ${change}%` : `انخفاض ${Math.abs(change)}%`;
-                energyChange.textContent = `${changeText} عن الشهر الماضي`;
+                const maxR = Math.max(...lastMonthReadings.map(r => r.value));
+                const minR = Math.min(...lastMonthReadings.map(r => r.value));
+                const lastMonthConsumption = maxR - minR;
+                if (lastMonthConsumption > 0) {
+                    const change = ((consumption - lastMonthConsumption) / lastMonthConsumption * 100).toFixed(1);
+                    const changeText = change > 0 ? `زيادة ${change}%` : `انخفاض ${Math.abs(change)}%`;
+                    energyChange.textContent = `${changeText} عن الشهر الماضي`;
+                } else {
+                    energyChange.textContent = 'التغيير عن الشهر الماضي';
+                }
             } else {
                 energyChange.textContent = 'التغيير عن الشهر الماضي';
             }
@@ -1253,7 +1216,6 @@
 
         function calculateBillPrediction() {
             const predictionDiv = document.getElementById('billPrediction');
-            
             if (appData.meterReadings.length < 2) {
                 predictionDiv.innerHTML = `
                     <div class="alert alert-warning">
@@ -1263,75 +1225,71 @@
                 return;
             }
 
-            const readings = appData.meterReadings.sort((a, b) => new Date(a.date) - new Date(b.date));
+            const readings = appData.meterReadings.slice().sort((a, b) => new Date(a.date) - new Date(b.date));
             const latest = readings[readings.length - 1];
             const previous = readings[readings.length - 2];
-            
+
             const consumption = latest.value - previous.value;
-            const daysDiff = Math.ceil((new Date(latest.date) - new Date(previous.date)) / (1000 * 60 * 60 * 24));
+            if (consumption < 0) {
+                predictionDiv.innerHTML = `<div class="alert alert-danger">خطأ في القراءات: القراءة الحالية أقل من السابقة</div>`;
+                return;
+            }
+
+            const daysDiff = Math.max(1, Math.ceil((new Date(latest.date) - new Date(previous.date)) / (1000 * 60 * 60 * 24)));
             const dailyAvg = consumption / daysDiff;
-            
-            // Estimate monthly consumption
             const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
             const estimatedMonthlyConsumption = dailyAvg * daysInMonth;
-            
-            // Rough price calculation (assuming average price per kWh)
-            const pricePerKwh = appData.currency === 'شيكل' ? 0.6 : 
-                               appData.currency === 'دينار' ? 0.085 :
-                               appData.currency === 'ريال' ? 0.225 : 0.06;
-            
+
+            const pricePerKwh = getPricePerKwh();
             const estimatedBill = estimatedMonthlyConsumption * pricePerKwh;
-            
+
             predictionDiv.innerHTML = `
                 <div class="consumption-display" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
                     <div class="consumption-value">${estimatedBill.toFixed(0)} ${appData.currency}</div>
                     <div class="consumption-change">توقع فاتورة الكهرباء هذا الشهر</div>
                 </div>
                 <div class="alert alert-success">
-                    الاستهلاك المتوقع: ${estimatedMonthlyConsumption.toFixed(0)} كيلوواط/ساعة
+                    الاستهلاك المتوقع: ${estimatedMonthlyConsumption.toFixed(0)} كيلوواط/ساعة — سعر الوحدة: ${pricePerKwh} ${appData.currency}/kWh
                 </div>
             `;
         }
 
         function generateEnergyTips() {
             const tipsDiv = document.getElementById('energyTips');
-            
             if (appData.meterReadings.length < 2) {
-                tipsDiv.innerHTML = `
-                    <div class="alert alert-warning">
-                        أضف قراءات العداد للحصول على نصائح مخصصة
-                    </div>
-                `;
+                tipsDiv.innerHTML = `<div class="alert alert-warning">أضف قراءات العداد للحصول على نصائح مخصصة</div>`;
                 return;
             }
 
-            const readings = appData.meterReadings.sort((a, b) => new Date(a.date) - new Date(b.date));
+            const readings = appData.meterReadings.slice().sort((a, b) => new Date(a.date) - new Date(b.date));
             const latest = readings[readings.length - 1];
             const previous = readings[readings.length - 2];
-            
+
             const consumption = latest.value - previous.value;
-            const daysDiff = Math.ceil((new Date(latest.date) - new Date(previous.date)) / (1000 * 60 * 60 * 24));
+            if (consumption < 0) {
+                tipsDiv.innerHTML = `<div class="alert alert-danger">خطأ في قراءات العداد — تأكد من الإدخالات</div>`;
+                return;
+            }
+
+            const daysDiff = Math.max(1, Math.ceil((new Date(latest.date) - new Date(previous.date)) / (1000 * 60 * 60 * 24)));
             const dailyAvg = consumption / daysDiff;
 
             let tips = [];
-            
             if (dailyAvg > 15) {
                 tips.push('💡 استهلاكك مرتفع! حاول إطفاء الأجهزة غير المستخدمة');
-                tips.push('❄️ اضبط درجة حرارة المكيف على 24 درجة لتوفير 20%');
+                tips.push('❄️ اضبط المكيف على 24 درجة لتوفير طاقة');
             } else if (dailyAvg > 10) {
-                tips.push('⚡ استهلاكك متوسط، يمكنك توفير المزيد');
+                tips.push('⚡ استهلاك متوسط — يمكنك تحسين العزل الحراري لتقليل الفاتورة');
                 tips.push('🔥 استخدم الماء البارد للغسيل عندما أمكن');
             } else {
-                tips.push('✅ ممتاز! استهلاكك منخفض ومثالي');
-                tips.push('🌟 حافظ على هذا المعدل الممتاز');
+                tips.push('✅ ممتاز! استهلاكك منخفض');
+                tips.push('🌟 حافظ على هذا المعدل، وتابع القراءات بانتظام');
             }
 
-            tips.push('💰 استخدم الأجهزة في ساعات الليل لأسعار أقل');
+            tips.push('💰 جرّب تشغيل الأجهزة الثقيلة في أوقات الليل إذا كانت الأسعار أقل');
             tips.push('🔌 افصل الأجهزة من الكهرباء عند عدم الاستخدام');
 
-            tipsDiv.innerHTML = tips.map(tip => `
-                <div class="alert alert-success">${tip}</div>
-            `).join('');
+            tipsDiv.innerHTML = tips.map(tip => `<div class="alert alert-success">${tip}</div>`).join('');
         }
 
         // Budget management
@@ -1356,28 +1314,24 @@
 
         function renderBudgetData() {
             const budgetOverview = document.getElementById('budgetOverview');
-            
+
             if (!appData.budget.monthlyIncome) {
-                budgetOverview.innerHTML = `
-                    <div class="alert alert-warning">
-                        قم بإعداد الميزانية أولاً
-                    </div>
-                `;
+                budgetOverview.innerHTML = `<div class="alert alert-warning">قم بإعداد الميزانية أولاً</div>`;
                 return;
             }
 
-            const currentMonth = new Date().getMonth();
+            const currentMonthIndex = new Date().getMonth();
             const currentYear = new Date().getFullYear();
+
             const monthlyExpenses = appData.expenses
                 .filter(expense => {
                     const expenseDate = new Date(expense.date);
-                    return expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear;
+                    return expenseDate.getMonth() === currentMonthIndex && expenseDate.getFullYear() === currentYear;
                 })
                 .reduce((total, expense) => total + expense.amount, 0);
 
             const remaining = appData.budget.billsBudget - monthlyExpenses;
             const percentageUsed = (monthlyExpenses / appData.budget.billsBudget * 100).toFixed(1);
-
             const alertClass = remaining < 0 ? 'alert-danger' : remaining < appData.budget.billsBudget * 0.2 ? 'alert-warning' : 'alert-success';
 
             budgetOverview.innerHTML = `
@@ -1446,7 +1400,7 @@
 
         function renderExpenses() {
             const expensesList = document.getElementById('expensesList');
-            
+
             if (appData.expenses.length === 0) {
                 expensesList.innerHTML = `
                     <div class="expense-item">
@@ -1459,9 +1413,7 @@
                 return;
             }
 
-            const recentExpenses = appData.expenses
-                .sort((a, b) => new Date(b.date) - new Date(a.date))
-                .slice(0, 10);
+            const recentExpenses = appData.expenses.slice().sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10);
 
             expensesList.innerHTML = recentExpenses.map(expense => {
                 const date = new Date(expense.date).toLocaleDateString('ar-SA');
@@ -1482,21 +1434,25 @@
 
         // Dashboard updates
         function updateDashboard() {
-            // Update total bills
+            // total unpaid bills
             const unpaidBills = appData.bills.filter(bill => !bill.paid);
             const totalAmount = unpaidBills.reduce((sum, bill) => sum + bill.amount, 0);
             document.getElementById('totalBills').textContent = `${totalAmount} ${appData.currency}`;
 
-            // Update monthly consumption
+            // monthly consumption (from latest two readings if valid)
             if (appData.meterReadings.length >= 2) {
-                const readings = appData.meterReadings.sort((a, b) => new Date(a.date) - new Date(b.date));
+                const readings = appData.meterReadings.slice().sort((a, b) => new Date(a.date) - new Date(b.date));
                 const latest = readings[readings.length - 1];
                 const previous = readings[readings.length - 2];
                 const consumption = latest.value - previous.value;
-                document.getElementById('monthlyConsumption').textContent = consumption.toFixed(0);
+                if (consumption >= 0) {
+                    document.getElementById('monthlyConsumption').textContent = consumption.toFixed(0);
+                } else {
+                    document.getElementById('monthlyConsumption').textContent = '—';
+                }
             }
 
-            // Update budget remaining
+            // budget remaining
             if (appData.budget.billsBudget) {
                 const currentMonth = new Date().getMonth();
                 const currentYear = new Date().getFullYear();
@@ -1517,35 +1473,22 @@
             const alertsDiv = document.getElementById('smartAlerts');
             let alerts = [];
 
-            // Check for overdue bills
             const today = new Date();
-            const overdueBills = appData.bills.filter(bill => 
-                !bill.paid && new Date(bill.dueDate) < today
-            );
-
+            const overdueBills = appData.bills.filter(bill => !bill.paid && new Date(bill.dueDate) < today);
             if (overdueBills.length > 0) {
-                alerts.push({
-                    type: 'danger',
-                    message: `⚠️ لديك ${overdueBills.length} فاتورة متأخرة! يرجى الدفع لتجنب رسوم التأخير`
-                });
+                alerts.push({ type: 'danger', message: `⚠️ لديك ${overdueBills.length} فاتورة متأخرة! يرجى الدفع لتجنب رسوم التأخير` });
             }
 
-            // Check for upcoming bills
             const upcomingBills = appData.bills.filter(bill => {
                 if (bill.paid) return false;
                 const dueDate = new Date(bill.dueDate);
                 const daysDiff = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
                 return daysDiff >= 0 && daysDiff <= 3;
             });
-
             if (upcomingBills.length > 0) {
-                alerts.push({
-                    type: 'warning',
-                    message: `📅 لديك ${upcomingBills.length} فاتورة مستحقة خلال 3 أيام`
-                });
+                alerts.push({ type: 'warning', message: `📅 لديك ${upcomingBills.length} فاتورة مستحقة خلال 3 أيام` });
             }
 
-            // Check budget alerts
             if (appData.budget.billsBudget > 0) {
                 const currentMonth = new Date().getMonth();
                 const currentYear = new Date().getFullYear();
@@ -1557,91 +1500,69 @@
                     .reduce((total, expense) => total + expense.amount, 0);
 
                 const percentageUsed = (monthlyExpenses / appData.budget.billsBudget) * 100;
-
                 if (percentageUsed >= 100) {
-                    alerts.push({
-                        type: 'danger',
-                        message: `💸 تجاوزت ميزانية الفواتير بنسبة ${(percentageUsed - 100).toFixed(1)}%`
-                    });
+                    alerts.push({ type: 'danger', message: `💸 تجاوزت ميزانية الفواتير بنسبة ${(percentageUsed - 100).toFixed(1)}%` });
                 } else if (percentageUsed >= 80) {
-                    alerts.push({
-                        type: 'warning',
-                        message: `💰 استخدمت ${percentageUsed.toFixed(1)}% من ميزانية الفواتير`
-                    });
+                    alerts.push({ type: 'warning', message: `💰 استخدمت ${percentageUsed.toFixed(1)}% من ميزانية الفواتير` });
                 }
             }
 
-            // Energy consumption alerts
+            // Energy alerts
             if (appData.meterReadings.length >= 2) {
-                const readings = appData.meterReadings.sort((a, b) => new Date(a.date) - new Date(b.date));
+                const readings = appData.meterReadings.slice().sort((a, b) => new Date(a.date) - new Date(b.date));
                 const latest = readings[readings.length - 1];
                 const previous = readings[readings.length - 2];
-                
                 const consumption = latest.value - previous.value;
-                const daysDiff = Math.ceil((new Date(latest.date) - new Date(previous.date)) / (1000 * 60 * 60 * 24));
+                const daysDiff = Math.max(1, Math.ceil((new Date(latest.date) - new Date(previous.date)) / (1000 * 60 * 60 * 24)));
                 const dailyAvg = consumption / daysDiff;
 
-                if (dailyAvg > 15) {
-                    alerts.push({
-                        type: 'warning',
-                        message: `⚡ استهلاك الكهرباء مرتفع (${dailyAvg.toFixed(1)} كيلوواط/يوم)! جرب تقليل استخدام المكيف`
-                    });
+                if (consumption >= 0 && dailyAvg > 15) {
+                    alerts.push({ type: 'warning', message: `⚡ استهلاك الكهرباء مرتفع (${dailyAvg.toFixed(1)} كيلوواط/يوم)! جرب تقليل استخدام المكيف` });
                 }
 
-                // Compare with previous period
                 if (readings.length >= 4) {
                     const previousPeriod = readings[readings.length - 3].value - readings[readings.length - 4].value;
-                    const change = ((consumption - previousPeriod) / previousPeriod) * 100;
-                    
-                    if (change > 20) {
-                        alerts.push({
-                            type: 'warning',
-                            message: `📈 زاد استهلاك الكهرباء ${change.toFixed(1)}% عن الفترة السابقة`
-                        });
-                    } else if (change < -10) {
-                        alerts.push({
-                            type: 'success',
-                            message: `📉 ممتاز! انخفض استهلاك الكهرباء ${Math.abs(change).toFixed(1)}%`
-                        });
+                    if (previousPeriod > 0) {
+                        const change = ((consumption - previousPeriod) / previousPeriod) * 100;
+                        if (change > 20) {
+                            alerts.push({ type: 'warning', message: `📈 زاد استهلاك الكهرباء ${change.toFixed(1)}% عن الفترة السابقة` });
+                        } else if (change < -10) {
+                            alerts.push({ type: 'success', message: `📉 ممتاز! انخفض استهلاك الكهرباء ${Math.abs(change).toFixed(1)}%` });
+                        }
                     }
                 }
             }
 
-            // Render alerts
             if (alerts.length === 0) {
-                alerts.push({
-                    type: 'success',
-                    message: '✅ كل شيء تحت السيطرة! لا توجد تنبيهات'
-                });
+                alerts.push({ type: 'success', message: '✅ كل شيء تحت السيطرة! لا توجد تنبيهات' });
             }
 
-            alertsDiv.innerHTML = alerts.map(alert => `
-                <div class="alert alert-${alert.type}">${alert.message}</div>
-            `).join('');
+            alertsDiv.innerHTML = alerts.map(alert => `<div class="alert alert-${alert.type}">${alert.message}</div>`).join('');
         }
 
-        // Initialize app
+        // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             loadData();
             generateSmartAlerts();
             generateEnergyTips();
             calculateBillPrediction();
 
-            // Set default values for form inputs
+            // default form values
             document.getElementById('monthlyIncome').value = appData.budget.monthlyIncome || '';
             document.getElementById('billsBudget').value = appData.budget.billsBudget || '';
 
-            // Auto-refresh dashboard every minute
+            // auto-refresh
             setInterval(() => {
                 updateDashboard();
                 generateSmartAlerts();
             }, 60000);
-        });
 
-        // Click outside modal to close
-        document.getElementById('addBillModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                hideAddBillModal();
+            // click outside modal to close (أضفته هنا بعد DOMContentLoaded)
+            const addBillModal = document.getElementById('addBillModal');
+            if (addBillModal) {
+                addBillModal.addEventListener('click', function(e) {
+                    if (e.target === this) hideAddBillModal();
+                });
             }
         });
     </script>
